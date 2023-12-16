@@ -13,7 +13,10 @@ fn App() -> impl IntoView {
             set_count(3);
         }>
 
-            "Click me!" {move || count.get()}
+            // nightly only
+            "Click me!" {count}
+        // stable
+        // "Click me!" {move || count.get() }
         </button>
     }
 }

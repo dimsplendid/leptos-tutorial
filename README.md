@@ -15,4 +15,4 @@
 
     ```
 
-> Progress: [A Basic Component](https://book.leptos.dev/view/01_basic_component.html)
+> Progress: [Dynamic Attributes](https://book.leptos.dev/view/02_dynamic_attributes.html)
