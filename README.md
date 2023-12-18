@@ -15,4 +15,10 @@
 
     ```
 
+## Run
+
+```bash
+trunk serve --open
+```
+
 > Progress: [Dynamic Attributes](https://book.leptos.dev/view/02_dynamic_attributes.html)
