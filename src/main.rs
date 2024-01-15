@@ -1,8 +1,20 @@
 use leptos::*;
+use web_sys::SubmitEvent;
 
 fn main() {
     // mount_to_body(|| view! { <AppComponetProp/> })
-    mount_to_body(|| view! { <AppIterComplex/> })
+    mount_to_body(App)
+}
+
+// test App
+#[component]
+fn App() -> impl IntoView {
+    view! {
+        <h2>"Controlled Component"</h2>
+        <ControlledComponent/>
+        <h2>"Uncontrolled Component"</h2>
+        <UncontrolledComponent/>
+    }
 }
 
 // 3.1 Basic Components
@@ -211,5 +223,166 @@ pub fn AppIterComplex() -> impl IntoView {
         >
             <p>{child.value}</p>
         </For>
+    }
+}
+
+#[component]
+pub fn AppIterComplexModifiedMemo() -> impl IntoView {
+    // start with a set of 3 rows
+    let (data, set_data) = create_signal(vec![
+        DatabaseEntry {
+            key: "foo".to_string(),
+            value: 10,
+        },
+        DatabaseEntry {
+            key: "bar".to_string(),
+            value: 15,
+        },
+        DatabaseEntry {
+            key: "baz".to_string(),
+            value: 30,
+        },
+    ]);
+    view! {
+        // when click, update each row
+        // doubling its value
+        <button on:click=move |_| {
+            set_data.update(|data|{
+                for row in data {
+                    row.value *= 2;
+                }
+            });
+            logging::log!("{:?}", data.get());
+        }>
+            "Update Values"
+        </button>
+        <For
+            each=move || data().into_iter().enumerate()
+            key=|(_, state)| state.key.clone()
+            children=move |(index, _)| {
+                let value = create_memo(move |_| {
+                    data.with(|data| data.get(index).map(|d| d.value).unwrap_or(0))
+                });
+                view! {
+                    <p>{value}</p>
+                }
+            }
+        />
+    }
+}
+
+#[derive(Debug, Clone)]
+struct DatabaseEntrySignal {
+    key: String,
+    value: RwSignal<i32>,
+}
+
+#[component]
+pub fn AppIterComplexModifiedSignal() -> impl IntoView {
+    // start with a set of 3 rows
+    let (data, set_data) = create_signal(vec![
+        DatabaseEntrySignal {
+            key: "foo".to_string(),
+            value: create_rw_signal(10),
+        },
+        DatabaseEntrySignal {
+            key: "bar".to_string(),
+            value: create_rw_signal(15),
+        },
+        DatabaseEntrySignal {
+            key: "baz".to_string(),
+            value: create_rw_signal(30),
+        },
+    ]);
+    view! {
+        // when click, update each row
+        // doubling its value
+        <button on:click=move |_| {
+            set_data.update(|data|{
+                for row in data {
+                    row.value.update(|value| *value *= 2);
+                }
+            });
+            logging::log!("{:?}", data.get());
+        }>
+            "Update Values"
+        </button>
+        <For
+            each=data
+            key=|state| state.key.clone()
+            let:child
+        >
+            <p>{child.value}</p>
+        </For>
+    }
+}
+
+// 3.6 Forms and Inputs
+
+// Controlled Input
+#[component]
+fn ControlledComponent() -> impl IntoView {
+    // create a signal to hold the value
+    let (name, set_name) = create_signal("Controlled".to_string());
+    view! {
+        <input type="test"
+            // fire an event whenever the input changes
+            on:input=move |ev| {
+                // event_target_value is a Leptos helper function
+                // if functions the same way as `event.target.value`
+                // in JavaScript, but smooths out some of the typecasting
+                // necessary to make this work in Rust
+                set_name(event_target_value(&ev))
+            }
+            // tl;dr: use prop:value for form inputs
+            prop:value=name
+        />
+        <p>"Name is " {name}</p>
+    }
+}
+
+// Uncontrolled Input
+#[component]
+fn UncontrolledComponent() -> impl IntoView {
+    // import the type for <input>
+    use leptos::html::Input;
+
+    let (name, set_name) = create_signal("Uncontrolled".to_string());
+
+    // We'll use a NodeRef to store a reference to the input element
+    // this will filled when the element is created.
+    let input_element: NodeRef<Input> = create_node_ref();
+
+    // fires when the form `submit` event happens
+    // this will store the value of the <input> in our signal
+    let on_submit = move |ev: SubmitEvent| {
+        // stop the page from reloading!
+        ev.prevent_default();
+
+        // here, we'll extract the value from the input
+        let value = input_element()
+            // event handlers can only fire after the view
+            // is mounted to the DOM, so the `NodeRef` will be `Some`
+            .expect("<input> to exist")
+            // `NodeRef` implements `Deref` for the DOM element type
+            // this menas we can call `HtmlInputElement::value()`
+            // to get the current value of the input
+            .value();
+        set_name(value);
+    };
+
+    view! {
+        <form on:submit=on_submit>
+            <input type="text"
+                // here, we use the `value` **attribute** to set only
+                // the initial value, letting the browser maintain
+                // the state after that
+                value=name
+                //store a reference to this input in `input_element`
+                node_ref=input_element
+            />
+            <input type="submit"/>
+        </form>
+        <p>"Name is " {name}</p>
     }
 }
