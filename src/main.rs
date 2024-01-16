@@ -386,3 +386,8 @@ fn UncontrolledComponent() -> impl IntoView {
         <p>"Name is " {name}</p>
     }
 }
+
+// 3.7 Controll Flow
+// https://book.leptos.dev/view/06_control_flow.html
+
+
